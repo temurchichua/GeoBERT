@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import os
 import string
 import re
@@ -6,7 +9,9 @@ import pprint
 # usage of counters : https://docs.python.org/2/library/collections.html
 from collections import Counter
 import pickle
+from ftfy import fix_encoding
 
+import copy
 # emit a warning to the puny Humans
 log.info('Welcome to the Georgian NLP toolset demo')
 
@@ -61,6 +66,8 @@ class Corpus():
 
     @classmethod
     def from_file(cls, file_name):
+        """collects all improtant data about file from file name and stores in attribute
+        !!!needs to be separated in it's own class!!!"""
         cls.file_name = file_name
         cls.basedir = os.path.abspath(os.path.dirname(file_name))
         cls.path = os.path.join(cls.basedir, cls.file_name)
@@ -69,6 +76,7 @@ class Corpus():
         return cls()
 
     def preprocess_text(self, text):
+        """preprocess text for NLP tasks"""
         # Remove all the special characters
         text = re.sub(r'\W', ' ', str(text))
         # remove all single characters
@@ -85,7 +93,7 @@ class Corpus():
         tokens = text.split()
         # tokens = [ilem(word) for word in tokens]
         tokens = [word for word in tokens if not_printable(word)]
-        tokens = [word for word in tokens if word not in self.ka_stop]
+        tokens = [word for word in tokens if word not in self.stop_words]
         tokens = [word for word in tokens if len(word) > 3]
 
         self.tokens.extend(tokens)
@@ -106,16 +114,18 @@ class Corpus():
 
         try:
             with open(self.path, mode='r', encoding='utf-8') as text_file:
-                for line in text_file:
+                for n, line in enumerate(text_file):
                     line = line.strip('\n')
-                    self.sequence.extend(line)
+                    self.sequence.append(line)
 
+                text_file.close()
         finally:
             log.info(f'წინადადების რაოდენობა: {len(self.sequence)}')
-            text_file.close()
+
 
         if preprocess:
             self.preprocess_sequence()
+
 
     def preprocess_sequence(self):
         """
@@ -129,24 +139,67 @@ class Corpus():
         self.counted = Counter(self.tokens)
 
     def save_corpus(self, name='corpus'):
-
-        # Step 2
-        with open(f'{name}.obj', 'wb') as destination_file:
+        data = copy.deepcopy(self)
+        del data.stop_words
+        with open(f'{name}.pickle', 'wb') as destination_file:
             # Step 3
-            pickle.dump(self, destination_file)
+            pickle.dump(data, destination_file, protocol=pickle.HIGHEST_PROTOCOL)
 
     @staticmethod
     def load_corpus(name='corpus'):
         # Step 2
-        with open(f'{name}.obj', 'r', encoding='utf-8') as file_location:
-            # Step 3
-            corp = pickle.load(open('corpus.obj', 'r'), encoding='uft-8')
+        with open(f'{name}.pickle', 'rb') as file_location:
+            corp = pickle.load(file_location)
             return corp
 
+    def edits1(self, word):
+        "All edits that are one edit away from `word`."
+        letters = 'აბგდევზთიკლმნოპჟრსტუფქღყშჩძწხჯჰ'
+        splits = [(word[:i], word[i:]) for i in range(len(word) + 1)]
+        deletes = [L + R[1:] for L, R in splits if R]
+        transposes = [L + R[1] + R[0] + R[2:] for L, R in splits if len(R) > 1]
+        replaces = [L + c + R[1:] for L, R in splits if R for c in letters]
+        inserts = [L + c + R for L, R in splits for c in letters]
+        return set(deletes + transposes + replaces + inserts)
+
+    def known(self, words):
+        """The subset of `words` that appear in the dictionary of counted words."""
+        return set(w for w in words if w in self.counted)
+
+    def edits2(self, word):
+        """All edits that are two edits away from `word`."""
+        return (e2 for e1 in self.edits1(word) for e2 in self.edits1(e1))
+
+    def candidates(self, word):
+        """Generate possible spelling corrections for word."""
+        return self.known([word]) or self.known(self.edits1(word)) or self.known(self.edits2(word)) or [word]
+
+    def probability(self, word):
+        """Probability of `word`."""
+        total = sum(self.counted.values())
+        return self.counted[word] / total
+
+    def correction(self, word):
+        "Most probable spelling correction for word."
+        return max(self.candidates(word), key=self.probability)
+
+    def edit_candidates(self, word, assume_wrong=False, fast=True):
+        """
+        Generate possible spelling corrections for word.
+        """
+
+        if fast:
+            ttt = self.known(self.edits1(word)) or {word}
+        else:
+            ttt = self.known(self.edits1(word)) or self.known(self.edits2(word)) or {word}
+
+        ttt = self.known([word]) | ttt
+        return list(ttt)
 
 corp = Corpus()
 corp.from_file("sample.txt")
-corp.file2sequence()
-corp.save_corpus()
+corp.file2sequence(preprocess=True)
+corp.count_tokens()
 
-corp2 = Corpus.load_corpus()
+print(corp.correction("თბილასი"))
+print(corp.edit_candidates("თბილასი"))
