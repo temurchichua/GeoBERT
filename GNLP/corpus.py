@@ -1,16 +1,7 @@
 import os
 import string
 import re
-import logging
-
-# Get the top-level logger object
-log = logging.getLogger()
-
-# make it print to the console.
-console = logging.StreamHandler()
-format_str = '%(asctime)s\t%(levelname)s -- %(processName)s %(filename)s:%(lineno)s -- %(message)s'
-console.setFormatter(logging.Formatter(format_str))
-log.addHandler(console)
+from logger import log
 
 # emit a warning to the puny Humans
 log.info('Welcome to the Georgian NLP toolset demo')
@@ -98,11 +89,10 @@ class Corpus():
         :if parameter preprocess = True:
         """
         try:
-            print(f'ვიწყებ {self.file_name}-ის დამუშავებას')
-        except:
-
-        sequence = []
-        prepro_sequence = []
+            log.info(f'ვიწყებ {self.file_name}-ის დამუშავებას')
+        except Exception as e:
+            log.error(
+                'გთხოვთ file2seq მეთოდის გამოყენებამდე ობიექტში დაამატოთ სამუშაო ფაილი ობიექტზე from_file(<path>) მეთოდის გამოყენებით')
 
         try:
             with open(self.path, mode='r') as text_file:
@@ -111,13 +101,15 @@ class Corpus():
                     self.sequence.append(line)
 
         finally:
-            print(f'წინადადების რაოდენობა: {len(self.sequence)}')
+            log.info(f'წინადადების რაოდენობა: {len(self.sequence)}')
             text_file.close()
 
         if preprocess:
             self.preprocess_sequence()
 
     def preprocess_sequence(self):
+        """
+        creates preprocessed copy of sequence stored in object using preprocess_text() method
+        """
         for element in self.sequence:
             self.prepro_sequence.append(self.preprocess_text(element))
-
