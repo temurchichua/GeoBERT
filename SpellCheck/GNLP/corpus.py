@@ -4,7 +4,7 @@
 import os
 import string
 import re
-from resources.logger import log
+from .resources.logger import log
 import pprint
 # usage of counters : https://docs.python.org/2/library/collections.html
 from collections import Counter
