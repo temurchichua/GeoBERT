@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+  {# get_flashed_messages() ავტომატურად იღებს flash()-ის პარამეტრებს #}
+      {% for msg in get_flashed_messages() %}
+      <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close" class="fade close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        {{msg}}
+        </div>
+      {% endfor %}
+    <h1 class="cover-heading">Spell Checker</h1>
+    <p class="lead">ტექსტის ალგორითმული შემსწორებელი</p>
+    <div class="lead">
+        <div class="form-group">
+          <form method="POST">
+            {{ form.hidden_tag() }}
+            {{ form.text.label }} {{ form.text(class_="form-control") }}
+            {{ form.submit(class_="btn btn-dark") }}
+          </form>
+        </div>
+        {% if session['checked'] %}
+        <p class="lead">ამოცნობილი სიტყვაა: <strong>{{ session['checked'] }}</strong></p>
+        {% else %}
+          <p class="lead">ამოცნობილი სიტყვა გამოცნდება აქ </p>
+        {% endif %}
+    </div>
+
+{% endblock %}

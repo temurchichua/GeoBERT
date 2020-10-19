@@ -12,6 +12,7 @@ import pickle
 from ftfy import fix_encoding
 
 import copy
+
 # emit a warning to the puny Humans
 log.info('Welcome to the Georgian NLP toolset demo')
 
@@ -48,7 +49,7 @@ def sizeof_fmt(file_size, suffix='B'):
 class Corpus():
     def __init__(self, stop_words='stops.txt'):
 
-        self.stop_words = set(line.strip() for line in open('stops.txt', encoding='utf-8'))
+        self.stop_words = set(line.strip() for line in open('C:/Users/cyber/GeoBERT/GNLP/stops.txt', encoding='utf-8'))
         self.sequence = []
         self.prepro_sequence = []
         self.tokens = []
@@ -70,7 +71,8 @@ class Corpus():
         !!!needs to be separated in it's own class!!!"""
         cls.file_name = file_name
         cls.basedir = os.path.abspath(os.path.dirname(file_name))
-        cls.path = os.path.join(cls.basedir, cls.file_name)
+        # cls.path = os.path.join(cls.basedir, cls.file_name).replace('\\','/')
+        cls.path = 'C:/Users/cyber/GeoBERT/GNLP/sample.txt'
         cls.status = os.stat(cls.path)
         cls.file_size = sizeof_fmt(cls.status.st_size)
         return cls()
@@ -122,10 +124,8 @@ class Corpus():
         finally:
             log.info(f'წინადადების რაოდენობა: {len(self.sequence)}')
 
-
         if preprocess:
             self.preprocess_sequence()
-
 
     def preprocess_sequence(self):
         """
@@ -196,10 +196,12 @@ class Corpus():
         ttt = self.known([word]) | ttt
         return list(ttt)
 
-corp = Corpus()
-corp.from_file("sample.txt")
-corp.file2sequence(preprocess=True)
-corp.count_tokens()
 
-print(corp.correction("თბილასი"))
-print(corp.edit_candidates("თბილასი"))
+if __name__ == '__main__':
+    corp = Corpus()
+    corp.from_file("sample.txt")
+    corp.file2sequence(preprocess=True)
+    corp.count_tokens()
+
+    print(corp.correction("თბილასი"))
+    print(corp.edit_candidates("თბილასი"))

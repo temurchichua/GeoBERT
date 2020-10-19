@@ -16,3 +16,4 @@
 4. [Transformer: A Novel Neural Network Architecture for Language Understanding](https://ai.googleblog.com/2017/08/transformer-novel-neural-network.html)
 5. https://www.freecodecamp.org/news/google-bert-nlp-machine-learning-tutorial/
 6. https://towardsdatascience.com/bert-text-classification-in-a-different-language-6af54930f9cb
+7. http://norvig.com/spell-correct.html
