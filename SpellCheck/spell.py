@@ -25,7 +25,7 @@ def index():
     form = TextInput()
 
     if form.validate_on_submit():
-        flash('მიმდინარეობს ინფორმაციის დამუშავება')
+        flash('ტექსტი წარმატებით დამუშავდა')
         text = form.text.data
         sep = text.split()
         checked = []
