@@ -2,14 +2,7 @@ from GNLP.corpus import Corpus
 from flask import Flask, render_template, session, redirect, url_for, flash
 from flask_wtf import FlaskForm
 
-from flask_wtf.file import FileField, FileRequired
-from werkzeug.utils import secure_filename
-
-from wtforms import (StringField, BooleanField,
-                     DateTimeField, SelectField,
-                     TextAreaField, SubmitField)
-
-from wtforms.validators import DataRequired, length
+from wtforms import (StringField, SubmitField)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "My_SecRet"

@@ -4,20 +4,21 @@
 import os
 import string
 import re
-from logger import log
+from resources.logger import log
 import pprint
 # usage of counters : https://docs.python.org/2/library/collections.html
 from collections import Counter
 import pickle
-from ftfy import fix_encoding
 
 import copy
 
+from pathlib import Path
 # emit a warning to the puny Humans
 log.info('Welcome to the Georgian NLP toolset demo')
 
 printable = set(string.printable)
 
+data_folder = Path("data/")
 
 def not_printable(word):
     """
@@ -49,7 +50,7 @@ def sizeof_fmt(file_size, suffix='B'):
 class Corpus():
     def __init__(self, stop_words='stops.txt'):
 
-        self.stop_words = set(line.strip() for line in open('C:/Users/cyber/GeoBERT/GNLP/stops.txt', encoding='utf-8'))
+        self.stop_words = set(line.strip() for line in open("data/stops.txt", encoding='utf-8'))
         self.sequence = []
         self.prepro_sequence = []
         self.tokens = []
@@ -71,8 +72,7 @@ class Corpus():
         !!!needs to be separated in it's own class!!!"""
         cls.file_name = file_name
         cls.basedir = os.path.abspath(os.path.dirname(file_name))
-        # cls.path = os.path.join(cls.basedir, cls.file_name).replace('\\','/')
-        cls.path = 'C:/Users/cyber/GeoBERT/GNLP/sample.txt'
+        cls.path = os.path.join(cls.basedir, cls.file_name)
         cls.status = os.stat(cls.path)
         cls.file_size = sizeof_fmt(cls.status.st_size)
         return cls()
@@ -141,14 +141,14 @@ class Corpus():
     def save_corpus(self, name='corpus'):
         data = copy.deepcopy(self)
         del data.stop_words
-        with open(f'{name}.pickle', 'wb') as destination_file:
+        with open(f'/data/pickles/{name}.pickle', 'wb') as destination_file:
             # Step 3
             pickle.dump(data, destination_file, protocol=pickle.HIGHEST_PROTOCOL)
 
     @staticmethod
     def load_corpus(name='corpus'):
         # Step 2
-        with open(f'{name}.pickle', 'rb') as file_location:
+        with open(f'/data/pickles/{name}.pickle', 'rb') as file_location:
             corp = pickle.load(file_location)
             return corp
 
