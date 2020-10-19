@@ -18,9 +18,7 @@ log.info('Welcome to the Georgian NLP toolset demo')
 
 printable = set(string.printable)
 
-def file_path(file_name):
-    """generates path relative to the GNLP Package and modules"""
-    return os.path.join(os.path.dirname(__file__), file_name)
+data_folder = Path("data/")
 
 def not_printable(word):
     """
@@ -52,7 +50,7 @@ def sizeof_fmt(file_size, suffix='B'):
 class Corpus():
     def __init__(self, stop_words='stops.txt'):
 
-        self.stop_words = set(line.strip() for line in open(file_path("data/stops.txt"), encoding='utf-8'))
+        self.stop_words = set(line.strip() for line in open((os.getcwd()+"/GNLP/data/stops.txt"), encoding='utf-8'))
         self.sequence = []
         self.prepro_sequence = []
         self.tokens = []
@@ -73,7 +71,8 @@ class Corpus():
         """collects all improtant data about file from file name and stores in attribute
         !!!needs to be separated in it's own class!!!"""
         cls.file_name = file_name
-        cls.path = file_path(file_name)
+        cls.basedir = os.path.abspath(os.path.dirname(file_name))
+        cls.path = os.path.join(cls.basedir, cls.file_name)
         cls.status = os.stat(cls.path)
         cls.file_size = sizeof_fmt(cls.status.st_size)
         return cls()
@@ -142,14 +141,14 @@ class Corpus():
     def save_corpus(self, name='corpus'):
         data = copy.deepcopy(self)
         del data.stop_words
-        with open(file_path(f'/data/pickles/{name}.pickle'), 'wb') as destination_file:
+        with open(f'/data/pickles/{name}.pickle', 'wb') as destination_file:
             # Step 3
             pickle.dump(data, destination_file, protocol=pickle.HIGHEST_PROTOCOL)
 
     @staticmethod
     def load_corpus(name='corpus'):
         # Step 2
-        with open(file_path(f'/data/pickles/{name}.pickle'), 'rb') as file_location:
+        with open(f'/data/pickles/{name}.pickle', 'rb') as file_location:
             corp = pickle.load(file_location)
             return corp
 
