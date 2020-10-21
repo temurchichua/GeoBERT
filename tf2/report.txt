@@ -1,0 +1,45 @@
+TensorFlow 2.0 Upgrade Script
+-----------------------------
+Converted 1 files
+Detected 2 issues that require attention
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+File: modeling.py
+--------------------------------------------------------------------------------
+modeling.py:364:9: WARNING: tf.contrib.layers.layer_norm requires manual check. (Manual edit required) `tf.contrib.layers.layer_norm` has been deprecated, and its implementation has been integrated with `tf.keras.layers.LayerNormalization` in TensorFlow 2.0. Note that, the default value of `epsilon` is changed to `1e-3` in the new API from `1e-12`, and this may introduce numerical differences. Please check the new API and use that instead.
+modeling.py:364:9: ERROR: Using member tf.contrib.layers.layer_norm in deprecated module tf.contrib. tf.contrib.layers.layer_norm cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+================================================================================
+Detailed log follows:
+
+================================================================================
+--------------------------------------------------------------------------------
+Processing file 'modeling.py'
+ outputting to 'modeling2.py'
+--------------------------------------------------------------------------------
+
+196:11: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+224:11: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+228:29: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+358:11: INFO: Changing keep_prob arg of tf.nn.dropout to rate, and recomputing value.
+
+364:9: WARNING: tf.contrib.layers.layer_norm requires manual check. (Manual edit required) `tf.contrib.layers.layer_norm` has been deprecated, and its implementation has been integrated with `tf.keras.layers.LayerNormalization` in TensorFlow 2.0. Note that, the default value of `epsilon` is changed to `1e-3` in the new API from `1e-12`, and this may introduce numerical differences. Please check the new API and use that instead.
+364:9: ERROR: Using member tf.contrib.layers.layer_norm in deprecated module tf.contrib. tf.contrib.layers.layer_norm cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+634:20: INFO: Added keywords to args of function 'tf.transpose'
+666:16: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+674:14: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+682:16: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+732:16: INFO: Added keywords to args of function 'tf.transpose'
+738:18: INFO: Added keywords to args of function 'tf.transpose'
+827:9: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+830:11: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+832:13: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+857:13: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+858:29: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+866:11: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+867:30: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+874:11: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+875:23: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+926:14: INFO: Added keywords to args of function 'tf.shape'
+982:17: INFO: Renamed 'tf.get_variable_scope' to 'tf.compat.v1.get_variable_scope'
+--------------------------------------------------------------------------------
+
