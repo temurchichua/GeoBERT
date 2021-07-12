@@ -9,18 +9,19 @@ import pprint
 # usage of counters : https://docs.python.org/2/library/collections.html
 from collections import Counter
 import pickle
-
+from ftfy import fix_encoding
 import copy
 
 from pathlib import Path
+
 # emit a warning to the puny Humans
 log.info('Welcome to the Georgian NLP toolset demo')
 
-printable = set(string.printable)
 
 def file_path(file_name):
     """generates path relative to the GNLP Package and modules"""
     return os.path.join(os.path.dirname(__file__), file_name)
+
 
 def not_printable(word):
     """
@@ -49,10 +50,19 @@ def sizeof_fmt(file_size, suffix='B'):
     return "%.1f%s%s" % (file_size, 'Yi', suffix)
 
 
-class Corpus():
-    def __init__(self, stop_words='stops.txt'):
+printable = set(string.printable)
+stop_words = set(line.strip() for line in open(file_path("data/stops.txt"), encoding='utf-8'))
 
-        self.stop_words = set(line.strip() for line in open(file_path("data/stops.txt"), encoding='utf-8'))
+
+class Corpus():
+    def __init__(self, file_name=None, stop_words='stops.txt'):
+
+        if file_name:
+            self.file_name = file_name
+            self.path = file_path(file_name)
+            self.status = os.stat(self.path)
+            self.file_size = sizeof_fmt(self.status.st_size)
+
         self.sequence = []
         self.prepro_sequence = []
         self.tokens = []
@@ -61,22 +71,18 @@ class Corpus():
     def __repr__(self):
         dictionary = self.__dict__
         try:
-            for e in ['stop_words', 'sequence', 'prepro_sequence', 'tokens', 'counted']:
-                dictionary[e] = len(dictionary.get(e))
+            vals = {attrib: dictionary[attrib] for attrib in ['counted']}
         except Exception as error:
             log.error(error)
         else:
-            return pprint.pformat(dictionary, indent=4)
+            return pprint.pformat(vals, indent=4)
 
     @classmethod
     def from_file(cls, file_name):
-        """collects all improtant data about file from file name and stores in attribute
+        """collects all important data about file from file name and stores in attribute
         !!!needs to be separated in it's own class!!!"""
-        cls.file_name = file_name
-        cls.path = file_path(file_name)
-        cls.status = os.stat(cls.path)
-        cls.file_size = sizeof_fmt(cls.status.st_size)
-        return cls()
+
+        return cls(file_name=file_name)
 
     def preprocess_text(self, text):
         """preprocess text for NLP tasks"""
@@ -113,15 +119,22 @@ class Corpus():
             log.info(f'ვიწყებ {self.file_name}-ის დამუშავებას')
         except Exception as e:
             log.error(
-                'გთხოვთ file2seq მეთოდის გამოყენებამდე ობიექტში დაამატოთ სამუშაო ფაილი ობიექტზე from_file(<path>) მეთოდის გამოყენებით')
+                'გთხოვთ file2seq მეთოდის გამოყენებამდე ობიექტში დაამატოთ სამუშაო ფაილი ობიექტზე from_file(<path>) '
+                'მეთოდის გამოყენებით')
 
         try:
             with open(self.path, mode='r', encoding='utf-8') as text_file:
                 for n, line in enumerate(text_file):
-                    line = line.strip('\n')
-                    self.sequence.append(line)
+                    try:
+                        fix_encoding(line)
+                        line = line.strip('\n')
+                        self.sequence.append(line)
+                    except Exception as error:
+                        print(f"During handling the sentence \"{line}\", following error has occured: {error}")
 
                 text_file.close()
+        except Exception as error:
+            print(f"During handling the sentence \"{line}\", following error has occured: {error}")
         finally:
             log.info(f'წინადადების რაოდენობა: {len(self.sequence)}')
 
