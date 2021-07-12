@@ -1,5 +1,8 @@
 # Imports
 import os
+import subprocess
+from sys import platform
+
 import re
 
 from IPython import get_ipython
@@ -21,7 +24,7 @@ log.info(f'N of SubProcesses: {SUBS}')
 
 
 # functions
-def isnotebook():
+def is_notebook():
     try:
         shell = get_ipython().__class__.__name__
         if shell == 'ZMQInteractiveShell':
@@ -34,20 +37,30 @@ def isnotebook():
         return False  # Probably standard Python interpreter
 
 
-def file_path(file_name):
+def file_path(file_name, clear=False):
     """generates abs path relative to the Package and modules"""
     # If running from notebook
-    if isnotebook():
+    if is_notebook():
         cwd = os.getcwd()
         f_path = cwd + file_name
     else:
         data_dir = os.path.abspath('')
         f_path = os.path.join(data_dir, file_name)
+
+    # if file needs to be cleaned
+    if clear:
+        clear_file(f_path)
     # check if the path exists
     if os.path.exists(f_path):
         return f_path
     else:
         raise FileNotFoundError
+
+
+def clear_file(f_path):
+    file_to_clear = open(f_path, 'w')
+    file_to_clear.write('')
+    file_to_clear.close()
 
 
 def is_not_printable(word, letters_only=True):
@@ -78,6 +91,20 @@ def sizeof_fmt(file_size, suffix='B'):
     return "%.1f%s%s" % (file_size, 'Yi', suffix)
 
 
+def lines_in_file(f_path):
+    if platform == "linux" or platform == "linux2":
+        result = int(subprocess.check_output(['wc', '-l', f_path]).split()[0])
+
+    elif platform == "win32":
+        try:
+            with open(f_path) as f:
+                result = sum(1 for _ in tqdm(f, desc=f"Count for {f_path}"))
+        except:
+            result = 0
+
+    return result
+
+
 numbers = set("0123456789")
 symbols = set("!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ \t\n\r\x0b\x0c")
 letters = set('ქწერტყუიოპჭღთასდფგჰჯკლშჟ₾ზხცვბნმძჩ')
@@ -85,47 +112,47 @@ printable = set().union(*[numbers, symbols, letters])
 
 
 class FileToProcess():
-    def __init__(self, file_name=None, stop_words="data/stops.txt"):
+    def __init__(self, file_name=None, stop_words="data/stops.txt", save_file=None, append=False):
 
         if not file_name:
             raise ValueError("Init FileToProcess class with path to the file as file_name argument ")
 
         self.file_name = file_name
-        self.__path = file_path(file_name)
-        self.__status = os.stat(self.__path)
-        self.__file_object = None
+        self.__read_path = file_path(file_name)
+        self.__status = os.stat(self.__read_path)
+
+        if not save_file:
+            save_file = f"{self.file_name.split('.')[0]}_pre_processed.txt"
+
+        self.save_file = save_file
+        self.__save_path = file_path(self.save_file, clear=not append)
 
         self.stop_words = set(line.strip() for line in open(file_path(stop_words), encoding='utf-8'))
-        self.sequence = []
-        self.file_size = sizeof_fmt(self.__status.st_size)
+        self.number_of_lines = lines_in_file(self.__read_path)
 
-    def load_file(self, max_num_of_lines=-1, file_name=None, append=False):
-        if append and file_name:
-            f_path = file_path(file_name)
-        else:
-            f_path = self.__path
+    def preprocess_and_append(self, max_num_of_lines=-1):
 
-        with open(f_path, mode='r', encoding='utf-8') as text_file:
-            # Progress bar
-            pool = mp.Pool(SUBS)
-            with pool:
-                description = f"Reading the file: {self.file_name}"
-                pool_to_iter = pool.imap_unordered(fix_encoding, text_file)
+        # Progress bar
+        pool = mp.Pool(SUBS)
+        n = 0
+        with pool:
+            description = f"Processing the file: {self.file_name}"
+            total = self.number_of_lines
+            with open(self.__read_path, mode='r', encoding='utf-8') as file:
+                pool_to_iter = pool.imap_unordered(self._check_and_update,
+                                                   open(self.__read_path, mode='r', encoding='utf-8'))
 
-                pbar = tqdm(pool_to_iter, desc=description)
+            pbar = tqdm(pool_to_iter, desc=description, total=total)
 
-                n = 0
+            for _ in pbar:
 
-                for line in pbar:
+                if n == max_num_of_lines:
+                    break
+                n += 1
 
-                    if n == max_num_of_lines:
-                        break
-
-                    line = line.strip('\n')
-                    self.sequence.append(line)
-                    n += 1
         # Finally:
-        log.info(f'Number of lines in sequence: {len(self.sequence)}')
+        log.info(f'To file: {lines_in_file(self.__save_path)} | {sizeof_fmt(os.stat(self.__save_path).st_size)}')
+        log.info(f'Saved number of lines: {lines_in_file(self.__save_path)}')
 
     def __preprocess_text(self, text, min_sentence_size=3, min_word_size=2, max_word_size=25):
         """preprocess text for NLP tasks"""
@@ -153,13 +180,13 @@ class FileToProcess():
         # Lemmatization - missing
         tokens = text.split()
 
-        index = len(tokens) - 1
-        while index >= 0:
+        index_range = range(len(tokens) - 1, -1, -1)
+        for index in index_range:
             word = tokens[index]
-            if is_not_printable(word) or word in self.stop_words or len(word) < min_word_size or len(
-                    word) > max_word_size:
+            if len(word) < min_word_size or len(word) > max_word_size \
+                    or is_not_printable(word) or word in self.stop_words:
                 tokens.pop(index)
-            index -= 1
+
         if len(tokens) < min_sentence_size:
             return None
 
@@ -167,56 +194,28 @@ class FileToProcess():
 
         return preprocessed_text
 
-    def _check_and_update(self, index):
-        sentence = self.sequence[index]
+    def _check_and_update(self, sentence):
+        sentence = fix_encoding(sentence)
         if pre_processed_sentence := self.__preprocess_text(sentence):
-            # update sentence with preprocessed version
-            # log.info(f"replaceing: {self.sequence[index]} > {pre_processed_sentence}")
-            self.sequence[index] = pre_processed_sentence
-        else:
-            # pop sentence from sequence
-            # log.info(f"popping: {self.sequence[index]} ")
-            self.sequence.pop(index)
+            # log.info(f"replaceing: {sentence} > {pre_processed_sentence}")
+            self.save_to_file(pre_processed_sentence)
 
-    def pre_process(self):
-        index = len(self.sequence) - 1
-        log.info(f'Number of lines before pre-pro: {index}')
-        scope = range(index, -1, -1)
-        # Progress bar
+    def save_to_file(self, sentence):
 
-        pool = mp.Pool(SUBS)
-        with pool:
-            description = f"Pre-processing the file: {self.file_name}"
-            pool_to_iter = pool.imap_unordered(self._check_and_update, scope)
-            pbar = tqdm(pool_to_iter, total=index, desc=description)
-            for _ in pbar:
-                pass
-            log.info(f'Number of lines after pre-pro: {len(self.sequence)}')
-
-    def save_to_file(self, filename=None):
-        if filename:
-            file_name = file_path(filename)
-        else:
-            file_name = f"{self.__path.split('.')[0]}_pre_processed.txt"
-
-        with open(file_name, 'w', encoding="utf-8") as output:
+        with open(self.__save_path, 'a', encoding="utf-8") as output:
             # Progress bar
-            pbar = tqdm(self.sequence)
-            pbar.set_description(f"Saving to the file: {self.file_name}")
-            for sentence in pbar:
-                output.write(str(sentence) + '\n')
+            output.write(str(sentence) + '\n')
 
     def __len__(self):
-        return len(self.sequence)
+        return self.number_of_lines
 
     def __repr__(self):
-        return f"Obj of file at: {self.__path}"
+        return f"Obj of file at: {self.__read_path}"
 
 
 if __name__ == '__main__':
-    print(isnotebook())
+    print(is_notebook())
     # load the file
-    text_file = FileToProcess('data/corpuses/kawiki-latest-pages-articles_preprocessed.txt')
-    text_file.load_file(max_num_of_lines=5)
-    text_file.pre_process()
-    text_file.save_to_file()
+    text_file = FileToProcess('data/corpuses/kawiki-latest-pages-articles_preprocessed.txt',
+                              save_file='data/corpuses/pre_processed.txt')
+    text_file.preprocess_and_append(max_num_of_lines=5)
